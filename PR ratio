@@ -1,0 +1,57 @@
+
+install.packages("readxl")
+library("readxl")
+library('xlsx')
+
+
+pr_function = function(filename){
+  pr_basefile <- read_excel(filename, sheet = 1)
+
+  pr_sum <- pr_basefile
+  pr_positive <- subset(pr_basefile, Value == 1)
+  pr_positive_agg <- subset(pr_basefile, Value == 1)
+  pr_negative <- subset(pr_basefile, Value == -1)
+  pr_neutral <- subset(pr_basefile, Value == 0)
+  
+  pr_sum["Variable"] = paste(pr_sum$`Product Solution`,"Sum")
+  pr_positive["Variable"] = paste(pr_positive$`Product Solution`,"Positive Count")
+  pr_positive_agg["Variable"] = paste(pr_positive_agg$`Product Solution`,"Ratio")
+  pr_negative["Variable"] = paste(pr_negative$`Product Solution`,"negative Count")
+  pr_neutral["Variable"] = paste(pr_neutral$`Product Solution`,"neutral Count")
+  
+  pr_sum$Value <- 1
+  pr_positive$Value <- 1
+  pr_negative$Value <- 1
+  pr_neutral$Value <- 1
+  
+  pr_pos_agg <- aggregate(pr_positive_agg$Value, by = list(Period = pr_positive_agg$Period,"Start Date" = pr_positive_agg$`Start Date`,Variable = pr_positive_agg$Variable,Geo = pr_positive_agg$Geo), FUN = sum)
+  pr_sum_agg <- aggregate(pr_sum$Value, by = list("Start Date" = pr_sum$`Start Date`), FUN = sum)
+  
+  pr_ratio <- merge(x = pr_pos_agg, y = pr_sum_agg, by = "Start Date", all.x = TRUE)
+  pr_ratio["Value"] = pr_ratio$x.x / pr_ratio$x.y
+  
+  myvars <- c("Period", "Start Date", "Variable", "Value", "Geo")
+  
+  pr_sum_vf <<- pr_sum[myvars]
+  pr_positive_vf <<- pr_positive[myvars]
+  pr_negative_vf <<- pr_negative[myvars]
+  pr_neutral_vf <<- pr_neutral[myvars]
+  pr_ratio_vf <<- pr_ratio[myvars]
+  
+  fname <- substr(filename,1,regexpr("\\.",filename)-1)
+  
+  filename_vf = paste(fname,"_vf.xlsx",sep = '')
+  
+  write.xlsx(pr_basefile, filename_vf, sheetName=filename,row.names = FALSE)
+  write.xlsx(pr_positive_vf, filename_vf, sheetName="positive", append = TRUE, row.names = FALSE)
+  write.xlsx(pr_negative_vf, filename_vf, sheetName="neutral", append = TRUE, row.names = FALSE)
+  write.xlsx(pr_neutral_vf, filename_vf, sheetName="negative", append = TRUE, row.names = FALSE)
+  write.xlsx(pr_ratio_vf, filename_vf, sheetName="ratio", append = TRUE, row.names = FALSE)
+  write.xlsx(pr_sum_vf, filename_vf, sheetName="Sum", append = TRUE, row.names = FALSE)
+  
+}
+
+
+setwd("D:/Adobe/Files from Client/Modified_files")
+
+pr_function("PR Creative Cloud_20160305-20160902.xlsx")
